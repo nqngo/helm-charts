@@ -5,12 +5,15 @@ on:
     branches:
       - main
 
+env:
+  SITE_URL: ${{ secrets.SITE_URL }}
+
 jobs:
   release:
-    # depending on default permission settings for your org (contents being read-only or read-write for workloads), you will have to add permissions
-    # see: https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
     permissions:
       contents: write
+      pages: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,7 +31,17 @@ jobs:
         with:
           version: v3.8.1
 
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.4.0
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Package and Release
+        run: |
+          helm package charts/* -d releases
+          helm repo index --url $SITE_URL releases
+
+      - name: Upload releases
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: 'releases/'
+      
+      - name: Deploy to GitHub pages
+        id: deployment
+        uses: actions/deploy-pages@v1
+
