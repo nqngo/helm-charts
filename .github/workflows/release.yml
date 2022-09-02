@@ -34,12 +34,15 @@ jobs:
       - name: Package and Release
         run: |
           helm package charts/* -d releases
-          helm repo index --url $SITE_URL releases
+          helm repo index --url "$SITE_URL" releases
 
       - name: Upload releases
         uses: actions/upload-pages-artifact@v1
         with:
-          path: 'releases/'
+          path: 'releases'
+
+      - name: Show the directory structure for debug
+        run: tree .
       
       - name: Deploy to GitHub pages
         id: deployment
