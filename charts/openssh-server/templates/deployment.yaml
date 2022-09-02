@@ -26,21 +26,39 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: ssh-config
+          emptyDir: {}
+        - name: {{ include "openssh-server.fullname" . }}-custom-init
+          configMap:
+            name: {{ include "openssh-server.fullname" . }}-custom-init
+      initContainers:
+        - name: init-ssh-pubkey
+          image: busybox
+          command:
+            - sh
+            - "-c"
+            - |-
+              mkdir -p /config/.ssh
+              wget {{ .Values.PUBLIC_KEY_URL }} -O /config/.ssh/authorized_keys
+          volumeMounts:
+            - name: ssh-config
+              mountPath: /config
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          volumeMounts:
+            - name: ssh-config
+              mountPath: /config
+            - name: {{ include "openssh-server.fullname" . }}-custom-init
+              mountPath: /config/custom-cont-init.d
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: ssh
               containerPort: 2222
               protocol: TCP
-          livenessProbe:
-            tcpSocket:
-              port: ssh
-            initialDelaySeconds: 15
-            periodSeconds: 20
           readinessProbe:
             tcpSocket:
               port: ssh
@@ -48,18 +66,14 @@ spec:
             periodSeconds: 10
           env:
           - name: SUDO_ACCESS
-            value: {{ .Values.SUDO_ACCESS }} 
+            value: "{{ .Values.SUDO_ACCESS }}"
           - name: PASSWORD_ACCESS
-            value: {{ .Values.PASSWORD_ACCESS }}
+            value: "{{ .Values.PASSWORD_ACCESS }}"
           - name: USER_NAME
             value: {{ .Values.USER_NAME }}
           {{- if .Values.USER_PASSWORD }}
           - name: USER_PASSWORD
             value: {{ .Values.USER_PASSWORD }}
-          {{- end }}
-          {{- if .Values.PUBLIC_KEY_URL }}
-          - name: PUBLIC_KEY_URL
-            value: {{ .Values.PUBLIC_KEY_URL }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
