@@ -1,0 +1,83 @@
+# Default values for openssh-server.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- The number of replicas
+replicaCount: 1
+
+# -- The `spec.strategyType` for updates
+strategyType: RollingUpdate
+
+# -- The maximum number of Pods that can be created over the desired number of `ReplicaSet` during updating.
+maxSurge: 1
+
+# -- The maximum number of Pods that can be unavailable during updating
+maxUnavailable: 1
+
+image:
+  # -- Repostory to pull the image from
+  repository: "lscr.io/linuxserver/openssh-server"
+  # -- The pull policy
+  pullPolicy: IfNotPresent
+  # -- the docker tag, if left empty it will get it from the chart's appVersion.
+  # We pull the latest image by default
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  # -- `spec.annotation` for the SSH service
+  annotations: {}
+  # -- `spec.type` for the SSH service
+  type: NodePort
+
+  # -- Port of the SSH service
+  port: 2222
+
+  # -- Optional node port for the SSH service
+  nodePort: ""
+
+  # -- A fixed `spec.loadBalancerIP` for SSH service 
+  loadBalancerIP: ""
+  # -- A fixed `spec.loadBalancerIP` for the IPv6 SSH service
+  loadBalancerIPv6: ""
+
+resources:
+  limits:
+    # -- CPU limit for the pod
+    cpu: 100m
+    # -- RAM limit for the pod
+    memory: 128Mi
+
+autoscaling:
+  # -- Enable autoscale
+  enabled: false
+  # -- Min number of replicas
+  minReplicas: 1
+  # -- Max number of replicas
+  maxReplicas: 5
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# -- Optional allow sudo access
+SUDO_ACCESS: false
+# -- Optional allow password access
+PASSWORD_ACCESS: false
+# -- Optional allow user password
+USER_PASSWORD: ""
+# -- Default SSH username
+USER_NAME: "bastion"
+# -- Optional public key url to fetch, eg. https://github.com/username.keys
+PUBLIC_KEY_URL: ""

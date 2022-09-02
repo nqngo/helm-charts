@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "openssh-server.fullname" . }}
+  labels:
+    {{- include "openssh-server.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "openssh-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "openssh-server.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: ssh
+              containerPort: 2222
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: ssh
+              initialDelaySeconds: 15
+              periodSeconds: 20
+          readinessProbe:
+            tcpSocket:
+              port: ssh
+              initialDelaySeconds: 5
+              periodSeconds: 10
+          env:
+          - name: SUDO_ACCESS
+            value: {{ .Values.SUDO_ACCESS }} 
+          - name: PASSWORD_ACCESS
+            value: {{ .Values.PASSWORD_ACCESS }}
+          - name: USER_NAME
+            value: {{ .Values.USER_NAME }}
+          {{- if .Values.USER_PASSWORD }}
+          - name: USER_PASSWORD
+            value: {{ .Values.USER_PASSWORD }}
+          {{- end }}
+          {{- if .Values.PUBLIC_KEY_URL }}
+          - name: PUBLIC_KEY_URL
+            value: {{ .Values.PUBLIC_KEY_URL }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
